@@ -1,0 +1,38 @@
+name: Security Scan and Import
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  defectdojo-import:
+    runs-on: ubuntu-latest
+    name: Run Trivy and Import to DefectDojo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-results.json'
+
+      - name: Import to DefectDojo
+        uses: olamilekan000/defectdojo-action@main
+        with:
+          defectdojo_url: ${{ secrets.DEFECTDOJO_URL }}
+          api_key: ${{ secrets.DEFECTDOJO_API_KEY }}
+          file: trivy-results.json
+          scan_type: "Trivy Scan"
+          product_name: "Test Dojo Product"
+          engagement_name: "CI/CD Engagement ${{ github.run_id }}"
+          active: "true"
+          verified: "false"
+          close_old_findings: "true"
